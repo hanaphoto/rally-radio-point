@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ラジオポイント通過記録</title>
+<style>
+:root{--bg:#eef1f4;--panel:#fff;--ink:#14202b;--sub:#5b6b7a;--line:#cdd6de;--acc:#0b5fc0;--accink:#fff;--hot:#ffd84d;--hotink:#14202b;--done:#dfe7ee;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f161d;--panel:#18222c;--ink:#eaf0f5;--sub:#93a4b4;--line:#2b3947;--acc:#5aa2ff;--accink:#08121d;--hot:#e0b800;--hotink:#111;--done:#223140;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f161d;--panel:#18222c;--ink:#eaf0f5;--sub:#93a4b4;--line:#2b3947;--acc:#5aa2ff;--accink:#08121d;--hot:#e0b800;--hotink:#111;--done:#223140;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;font-variant-numeric:tabular-nums;-webkit-tap-highlight-color:transparent}
+.app{max-width:520px;margin:0 auto;padding:12px}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.meta input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font:inherit;font-size:15px}
+.clock{display:flex;justify-content:space-between;align-items:baseline;margin:4px 2px 8px;color:var(--sub);font-size:14px}
+#now{font-size:22px;font-weight:700;color:var(--ink)}
+.entry{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px}
+#disp{height:72px;display:flex;align-items:center;justify-content:center;font-size:54px;font-weight:800;letter-spacing:.04em;border-bottom:2px solid var(--line);margin-bottom:10px}
+#disp.empty{color:var(--sub);font-size:20px;font-weight:500;letter-spacing:0}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pad button{height:58px;font:inherit;font-size:26px;font-weight:700;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.pad button:active{transform:scale(.97)}
+.pad .rec{grid-column:span 3;height:68px;background:var(--acc);color:var(--accink);border-color:var(--acc);font-size:24px}
+.pad .fn{font-size:18px;color:var(--sub)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+h2{font-size:16px;margin:18px 2px 8px;display:flex;justify-content:space-between;align-items:center}
+h2 button{font:inherit;font-size:14px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+.grp{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}
+.grp.cur{border:3px solid var(--hot)}
+.grp.done{background:var(--done);opacity:.75}
+.min{font-size:15px;font-weight:700;color:var(--sub)}
+.nums{grid-column:1/-1;font-size:34px;font-weight:800;line-height:1.25;word-break:break-all}
+.grp button{font:inherit;font-size:14px;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.grp.done button{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+.empty-msg{color:var(--sub);padding:14px 4px;font-size:14px}
+.lp{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:3px solid var(--acc);padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:5;display:none}
+.lp.on{display:block}
+.lp textarea{width:100%;height:96px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:17px}
+.lp .row{display:flex;gap:8px;margin-top:8px}
+.lp button,.lp a{flex:1;text-align:center;text-decoration:none;font:inherit;font-size:16px;font-weight:700;padding:12px 6px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.lp a{background:#06c755;border-color:#06c755;color:#fff}
+.sheet{display:none}
+@media print{
+ :root{padding:0}
+ body{background:#fff;color:#000}
+ .app{display:none}
+ .sheet{display:block;font-size:12pt}
+ .sheet h1{font-size:16pt;margin:0 0 4pt}
+ .sheet p{margin:0 0 8pt}
+ .sheet table{width:100%;border-collapse:collapse}
+ .sheet th,.sheet td{border:1px solid #000;padding:4pt 6pt;text-align:left;vertical-align:top}
+ .sheet td.c{width:14%;font-weight:700}
+ .sheet td.k{width:10%;text-align:center}
+ .sheet tr{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="meta">
+  <input id="ev" placeholder="大会名" aria-label="大会名">
+  <input id="pt" placeholder="ポイント名" aria-label="ポイント名">
+ </div>
+ <div class="clock"><span>現在時刻</span><span id="now">--:--:--</span></div>
+ <div class="entry">
+  <div id="disp" class="empty">ゼッケンを入力</div>
+  <div class="pad" id="pad">
+   <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+   <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+   <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+   <button data-k="c" class="fn">クリア</button><button data-k="0">0</button><button data-k="u" class="fn">直前を取消</button>
+   <button data-k="r" class="rec">通過を記録</button>
+  </div>
+ </div>
+ <h2>分ごとの通過 <span><button id="reset">リセット</button> <button id="print">印刷</button> <button id="txt">テキスト用</button></span></h2>
+ <div id="list"></div>
+ <div class="lp" id="lp"><textarea id="lt" aria-label="テキスト用の文章"></textarea><div class="row"><button id="lc">コピー</button><button id="lx">閉じる</button></div></div>
+</div>
+<div class="sheet" id="sheet"></div>
+<script>
+(function(){
+var KEY="rally-radio-point-v1";
+var S={ev:"",pt:"",log:[],done:{}};
+try{var raw=localStorage.getItem(KEY);if(raw){var p=JSON.parse(raw);if(p&&p.log)S=p;}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+var buf="";
+var $=function(i){return document.getElementById(i)};
+function z(n){return (n<10?"0":"")+n}
+function hm(t){var d=new Date(t);return z(d.getHours())+":"+z(d.getMinutes())}
+function sec(t){return z(new Date(t).getSeconds())}
+function groups(){
+ var g=[],m={};
+ S.log.forEach(function(e){var k=e.s||hm(e.t);if(!m[k]){m[k]={k:k,items:[]};g.push(m[k]);}m[k].items.push(e);});
+ return g;
+}
+function nxt(k){var a=k.split(":"),m=(+a[0])*60+(+a[1])+1;m=m%1440;return z(Math.floor(m/60))+":"+z(m%60)}
+function slot(){var k=hm(Date.now()),n=0;while(S.done[k]&&n<1440){k=nxt(k);n++}return k}
+function esc(s){return String(s).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+function render(){
+ var d=$("disp");
+ if(buf){d.textContent=buf;d.className=""}else{d.textContent="ゼッケンを入力";d.className="empty"}
+ var g=groups(),cur=hm(Date.now()),h="";
+ if(!g.length)h='<div class="empty-msg">まだ記録がありません。番号を入力して「通過を記録」を押してください。</div>';
+ g.slice().reverse().forEach(function(x){
+  var isDone=!!S.done[x.k];
+  h+='<div class="grp'+(x.k===cur?' cur':'')+(isDone?' done':'')+'"><div class="min">'+x.k+'台 ・ '+x.items.length+'台通過</div>'
+   +'<span><button data-l="'+x.k+'">テキスト用</button> <button data-d="'+x.k+'">'+(isDone?'読み上げ済':'読み上げ済にする')+'</button></span>'
+   +'<div class="nums">'+x.items.map(function(e){return esc(e.n)}).join("、")+'</div></div>';
+ });
+ $("list").innerHTML=h;
+ var r='<h1>'+esc(S.ev||"ラジオポイント通過記録")+'</h1><p>ポイント: '+esc(S.pt||"　　　　")+'　　日付: '+new Date().toLocaleDateString("ja-JP")+'</p>'
+  +'<table><tr><th>時刻(分)</th><th>通過ゼッケン(秒)</th><th>報告</th></tr>';
+ g.forEach(function(x){
+  r+='<tr><td class="c">'+x.k+'</td><td>'+x.items.map(function(e){return esc(e.n)+'('+(hm(e.t)===x.k?'':hm(e.t)+':')+sec(e.t)+'秒)'}).join("　")+'</td><td class="k">'+(S.done[x.k]?'済':'□')+'</td></tr>';
+ });
+ $("sheet").innerHTML=r+'</table>';
+}
+$("pad").addEventListener("click",function(e){
+ var k=e.target.getAttribute("data-k");if(k===null)return;
+ if(k==="c"){buf=""}
+ else if(k==="u"){S.log.pop();save()}
+ else if(k==="r"){if(buf){S.log.push({n:buf,t:Date.now(),s:slot()});buf="";save()}}
+ else if(buf.length<4){buf+=k}
+ render();
+});
+$("list").addEventListener("click",function(e){
+ var l=e.target.getAttribute("data-l");if(l){openLine(l);return}
+ var k=e.target.getAttribute("data-d");if(!k)return;
+ if(S.done[k])delete S.done[k];else S.done[k]=true;
+ save();render();
+});
+$("ev").value=S.ev||"";$("pt").value=S.pt||"";
+$("ev").addEventListener("input",function(){S.ev=this.value;save();render()});
+$("pt").addEventListener("input",function(){S.pt=this.value;save();render()});
+$("print").addEventListener("click",function(){window.print()});
+function lineText(k){var g=groups().filter(function(x){return x.k===k})[0];if(!g)return"";return (S.pt?S.pt+" ":"")+k+"台 "+g.items.length+"台通過\n"+g.items.map(function(e){return e.n}).join("、")}
+function openLine(k){var t=lineText(k);$("lt").value=t;$("lp").className="lp on"}
+$("lc").addEventListener("click",function(){var t=$("lt"),b=this,ok=false;t.focus();t.select();try{t.setSelectionRange(0,99999)}catch(e){}
+ try{ok=document.execCommand("copy")}catch(e){}
+ if(!ok&&navigator.clipboard){try{navigator.clipboard.writeText(t.value);ok=true}catch(e){}}
+ b.textContent=ok?"コピーしました":"長押しでコピー";setTimeout(function(){b.textContent="コピー"},2000)});
+$("lx").addEventListener("click",function(){$("lp").className="lp"});
+function allText(){var g=groups();if(!g.length)return"";var h=(S.ev?S.ev+"\n":"")+(S.pt?S.pt+"\n":"");return h+g.map(function(x){return x.k+"台 "+x.items.length+"台通過\n"+x.items.map(function(e){return e.n}).join("、")}).join("\n\n")}
+$("txt").addEventListener("click",function(){$("lt").value=allText();$("lp").className="lp on"});
+var rt=null;
+$("reset").addEventListener("click",function(){
+ var b=this;
+ if(rt===null){b.textContent="もう一度押すと全消去";b.style.background="var(--hot)";b.style.color="var(--hotink)";rt=setTimeout(function(){rt=null;b.textContent="リセット";b.style.background="";b.style.color=""},4000);return}
+ clearTimeout(rt);rt=null;
+ b.textContent="リセット";b.style.background="";b.style.color="";
+ S.log=[];S.done={};buf="";save();render();
+});
+function tick(){var d=new Date();$("now").textContent=z(d.getHours())+":"+z(d.getMinutes())+":"+z(d.getSeconds());}
+var last="";
+setInterval(function(){tick();var c=hm(Date.now());if(c!==last){last=c;render();}},500);
+tick();render();
+})();
+</script>
+</body>
+</html>
