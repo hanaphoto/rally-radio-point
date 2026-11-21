@@ -23,7 +23,7 @@
 
 | ファイル | 内容 |
 |---|---|
-| `index.html` | 本体（単一HTML） |
+| `index.html` | 本体（単一HTML）。画面上に説明書（manual.html）へのリンクあり |
 | `manual.html` | 説明書 |
 
 ## 注意
